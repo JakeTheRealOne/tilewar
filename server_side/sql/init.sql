@@ -17,4 +17,4 @@ CREATE TABLE IF NOT EXISTS Categories (
 );
 
 -- Initial content
-INSERT INTO Users (email, pw) VALUES ('amin@diro.umontreal.ca', 'ift3225');
+INSERT INTO Users (email, pw) VALUES ('admin@diro.umontreal.ca', 'ift3225');
