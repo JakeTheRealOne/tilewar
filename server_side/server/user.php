@@ -1,4 +1,7 @@
 <?php
+// CRUD for Users
+// Author: Bilal Vandenberge
+
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json; charset: UTF-8');
 
@@ -7,16 +10,16 @@ $input = json_decode(file_get_contents('php://input'), true);
 $db = new PDO("mysql:host=localhost;dbname=tilewar_database", "admin", "ift3225");
 
 switch ($action) {
-    case 'signup':
-        registerUser($input);
+    case 'create':
+        create($input);
         break;
 
-    case 'login':
-        tryUser($input);
+    case 'challenge':
+        challenge($input);
         break;
 
-    case 'delUser':
-        deleteUser($input);
+    case 'delete':
+        delete($input);
         break;
 
     default:
@@ -25,9 +28,15 @@ switch ($action) {
         break;
 }
 
-function registerUser($data)
+function create($data)
 {
     global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"])) {
+        echo json_encode(array(
+            'return' => 322507,
+        ));
+    }
 
     $email = $data["email"];
     $password = $data["password"];
@@ -55,9 +64,15 @@ function registerUser($data)
     echo json_encode($return);
 }
 
-function tryUser($data)
+function challenge($data)
 {
     global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"])) {
+        echo json_encode(array(
+            'return' => 322507,
+        ));
+    }
 
     $email = $data["email"];
     $password = $data["password"];
@@ -86,9 +101,15 @@ function tryUser($data)
 }
 
 
-function deleteUser($data)
+function delete($data)
 {
     global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"])) {
+        echo json_encode(array(
+            'return' => 322507,
+        ));
+    }
 
     $email = $data["email"];
     $password = $data["password"];

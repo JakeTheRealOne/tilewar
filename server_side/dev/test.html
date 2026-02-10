@@ -10,10 +10,17 @@
 
     <script>
         window.addEventListener("load", function () {
-            fetch("http://localhost:8000/api.php?action=delUser",
+            fetch("http://localhost:8000/user.php?action=create",
                 {
                     method: 'POST',
-                    body: JSON.stringify({ email: "jakelevrai@outlook.be", password: "123456789" })
+                    body: JSON.stringify({ email: "jakelevrai@outlook.be", password: "123456789"})
+                })
+                .catch(function (error) { alert(error); });
+
+            fetch("http://localhost:8000/category.php?action=delete",
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ email: "jakelevrai@outlook.be", password: "123456789", cat_id: 1 })
                 })
                 .then(response => response.json())
                 .then(function (data) { document.getElementById("tofill").textContent = JSON.stringify(data); })

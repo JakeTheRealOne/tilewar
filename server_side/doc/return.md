@@ -11,4 +11,7 @@ After making sure that the server is running, the api.php file will handle fetch
 | 322502 | User already registered |
 | 322503 | Unknown user            |
 | 322504 | Invalid password        |
-| 322504 | Internal server error   |
+| 322505 | Internal server error   |
+| 322506 | Not authentified        |
+| 322507 | Bad json                |
+| 322508 | Unkown category         |
