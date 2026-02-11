@@ -13,15 +13,39 @@ Website for collaborative tile organisation.
 
 ## Instalation
 
-?
+Clone this repo.
 
 ## Execution - client side
 
+After running the php server locally, open this page in your browser:
+
+```path
 ?
+```
 
 ## Execution - server side
 
-?
+To run the server (locally):
+
+### 1. Be sure that mysql and php are installed on your machine
+
+```bash
+mysql --version
+php --version
+```
+
+### 2. Create the database (in the directory `server_side/sql`)
+
+```bash
+mysql -u root -p < server_side/sql/init.sql
+# Enter your password (default: blank)
+```
+
+### 3. Run the php server (in the directory `server_side/server`)
+
+```bash
+php -S localhost:8000
+```
 
 ## License
 

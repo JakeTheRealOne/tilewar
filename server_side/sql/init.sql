@@ -30,6 +30,3 @@ CREATE TABLE IF NOT EXISTS Tiles (
     FOREIGN KEY (author_email) REFERENCES Users(email) ON DELETE CASCADE,
     FOREIGN KEY (cat_id) REFERENCES Categories(id) ON DELETE CASCADE
 );
-
--- Initial content
-INSERT INTO Users (email, pw) VALUES ('admin@diro.umontreal.ca', 'ift3225');

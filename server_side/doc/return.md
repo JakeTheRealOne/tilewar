@@ -2,8 +2,6 @@
 
 After making sure that the server is running, the api.php file will handle fetch GET and return codes according to the nature of the response.
 
-## List of return codes
-
 | Code   | Description             |
 |--------|-------------------------|
 | 322500 | Success                 |
