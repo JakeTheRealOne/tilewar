@@ -9,18 +9,25 @@
     <p id="tofill"></p>
 
     <script>
-        window.addEventListener("load", function () {
+        window.addEventListener("load", async function () {
             fetch("http://localhost:8000/user.php?action=create",
                 {
                     method: 'POST',
-                    body: JSON.stringify({ email: "jakelevrai@outlook.be", password: "123456789"})
+                    body: JSON.stringify({ email: "jakelevrai@outlook.be", password: "123456789" })
                 })
                 .catch(function (error) { alert(error); });
 
             fetch("http://localhost:8000/category.php?action=delete",
                 {
                     method: 'POST',
-                    body: JSON.stringify({ email: "jakelevrai@outlook.be", password: "123456789", cat_id: 1 })
+                    body: JSON.stringify({
+                        email: "jakelevrai@outlook.be",
+                        password: "123456789",
+                        // cat_id: 1,
+                        cat_id: 1,
+                        // title: "My Tile but better",
+                        // content: "This is a very normal text with no submeaning to it."
+                    })
                 })
                 .then(response => response.json())
                 .then(function (data) { document.getElementById("tofill").textContent = JSON.stringify(data); })

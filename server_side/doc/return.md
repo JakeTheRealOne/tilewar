@@ -13,5 +13,6 @@ After making sure that the server is running, the api.php file will handle fetch
 | 322504 | Invalid password        |
 | 322505 | Internal server error   |
 | 322506 | Not authentified        |
-| 322507 | Bad json                |
+| 322507 | Bad input               |
 | 322508 | Unkown category         |
+| 322509 | Unkown tile             |

@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS Categories (
     id INT AUTO_INCREMENT UNIQUE,
     author_email VARCHAR(100) NOT NULL,
     title VARCHAR(100) NOT NULL,
-    creation_date DATETIME NOT NULL DEFAULT (CURDATE()),
+    creation_date DATETIME NOT NULL DEFAULT (NOW()),
     PRIMARY KEY (id),
-    FOREIGN KEY (author_email) REFERENCES Users(email)
+    FOREIGN KEY (author_email) REFERENCES Users(email) ON DELETE CASCADE
 );
 
 -- Tiles
@@ -25,9 +25,10 @@ CREATE TABLE IF NOT EXISTS Tiles (
     cat_id INT NOT NULL,
     title VARCHAR(100) NOT NULL,
     content VARCHAR(1000) NOT NULL,
+    creation_date DATETIME NOT NULL DEFAULT (NOW()),
     PRIMARY KEY (id),
-    FOREIGN KEY (author_email) REFERENCES Users(email),
-    FOREIGN KEY (cat_id) REFERENCES Categories(id)
+    FOREIGN KEY (author_email) REFERENCES Users(email) ON DELETE CASCADE,
+    FOREIGN KEY (cat_id) REFERENCES Categories(id) ON DELETE CASCADE
 );
 
 -- Initial content
