@@ -1,70 +1,219 @@
-const TASKS_PER_PAGE = 15;
-let currentPage = 1;
+const TACHE_PAR_PAGE = 15 ;
+let currentPage=1;
 
-// À adapter : utilisateur courant et catégorie par défaut
-const CURRENT_EMAIL = 'test@example.com';
-const CURRENT_PASSWORD = 'motdepasse';
-const DEFAULT_CAT_ID = 1;
+const DEFAULT_CAT_ID= 1;
+
+let CURRENT_EMAIL = null;
+
+let CURRENT_PASSWORD = null;
+
 
 document.addEventListener('DOMContentLoaded', () => {
   ecouteurEvenement();
-  chargementEtAffichageTache();
-});
+  
+  updateAuthStatus();
+  });
 
+  function updateAuthStatus() {
 
-// ----------- Chargement des tuiles (version simple) -----------
+  const nameEl = document.getElementById('user-name');
 
-// Comme tile.php n’a pas encore d’endpoint "list", cette fonction devra
-// être adaptée quand on ajoutera une route pour lister toutes les tuiles.
-// Pour l’instant, on affiche juste un message.
+  const logoutBtn = document.getElementById('logout-btn');
+  const authWarning = document.getElementById('auth-warning');
 
-async function chargementEtAffichageTache() {
-  const grid = document.getElementById('tasks-grid');
-  const compteur = document.getElementById('task-count');
+  const noTasks = document.getElementById('no-tasks');
+  if (CURRENT_EMAIL) {
+    if (nameEl) nameEl.textContent = CURRENT_EMAIL;
 
-  grid.innerHTML = '<p>La liste des tâches sera disponible une fois l’API de liste implémentée.</p>';
-  if (compteur) compteur.textContent = '0 tâche';
+    if (logoutBtn) logoutBtn.style.display = 'inline-block';
+
+    if (authWarning) authWarning.style.display = 'none';
+
+    if (noTasks) noTasks.style.display = 'none';
+
+    chargementEtAffichageTache(); 
+
+  } else {
+
+    if (nameEl) nameEl.textContent = 'Non connecté';
+
+    if (logoutBtn) logoutBtn.style.display = 'none';
+
+    if (authWarning) authWarning.style.display = 'inline';
+
+    if (noTasks) noTasks.style.display = 'block';
+  }
 }
 
+function deconnexion() {
 
-// ----------- Rendu d’une liste de tuiles -----------
+  CURRENT_EMAIL = null;
 
-function renduTache(tasks) {
-  const grid = document.getElementById('tasks-grid');
-  grid.innerHTML = '';
+  CURRENT_PASSWORD = null;
+  updateAuthStatus();
+}
 
-  if (!tasks || tasks.length === 0) {
-    grid.innerHTML = '<p>Aucune tâche trouvée.</p>';
+async function inscriptionUtilisateur(event) {
+
+  event.preventDefault();
+
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  const errorEl = document.getElementById('register-error');
+  const successEl = document.getElementById('register-success');
+
+  clearMessages('register-');
+
+  if (!email || !password) {
+
+    if (errorEl) errorEl.textContent = 'Email et mot de passe obligatoires.';
+    return;
+
+  }
+
+  try {
+
+    const res = await fetch('server_side/server/user.php?action=create', {  
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+
+    });
+
+    const data = await res.json();
+
+    if (data.return === 322500) {
+      if (successEl) successEl.textContent ='Inscription réussie! Connectez-vous.';
+      event.target.reset();
+    } else if (data.return === 322502) {
+      if (errorEl) errorEl.textContent = 'Email déjà utilisé.';
+    } else {
+      if (errorEl) errorEl.textContent = `Erreur ${data.return}`;
+    }
+  } catch (err) {
+    if (errorEl) errorEl.textContent ='Erreur réseau.';
+  }
+}
+
+async function connexionUtilisateur(event) {
+  event.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorEl = document.getElementById('login-error');
+
+  clearMessages('login-');
+
+  if (!email || !password) {
+
+    if (errorEl) errorEl.textContent = 'Email et mot de passe obligatoires.';
     return;
   }
 
-  tasks.forEach(task => {
-    grid.appendChild(creationTuileTache(task));
-  });
+  try {
+
+    const res = await fetch('server_side/server/user.php?action=challenge', {
+
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (data.return === 322500) {
+
+      CURRENT_EMAIL = email;
+      CURRENT_PASSWORD = password;
+
+      event.target.reset();
+
+      updateAuthStatus();
+
+    } else if (data.return === 322503) {
+
+      errorEl.textContent = 'Compte inconnu.';
+    } else if (data.return === 322504) {
+      errorEl.textContent ='Mot de passe incorrect.';
+
+    } else {
+      errorEl.textContent =`Erreur ${data.return}`;
+    }
+  } catch (err) {
+    errorEl.textContent ='Erreur réseau.';
+  }
+}
+
+function clearMessages(prefix) {
+
+  const errorEl = document.getElementById(prefix + 'error');
+  const successEl = document.getElementById(prefix + 'success');
+
+  if (errorEl) errorEl.textContent = '';
+
+  if (successEl) successEl.textContent = '';
+
+}
+
+async function chargementEtAffichageTache() {
+
+  if (!CURRENT_EMAIL) {
+
+    const grid = document.getElementById('tasks-grid');
+    if (grid) grid.innerHTML = '<p>Connectez-vous pour voir vos tâches.</p>';
+    return;
+
+  }
+
+  // TODO : appeler tile.php?action=getList quand implémenté
+  const grid = document.getElementById('tasks-grid');
+  const compteur = document.getElementById('task-count');
+
+  if (grid) grid.innerHTML = '<p>Liste à implémenter (connecté).</p>';
+
+  if (compteur) compteur.textContent = '0 tâche';
+}
+
+function renduTache(tasks) {
+
+  const grid= document.getElementById('tasks-grid');
+
+  if (!grid) return;
+
+  grid.innerHTML ='';
+  if (!tasks || tasks.length === 0){
+
+    grid.innerHTML='<p>Aucune tâche trouvée.</p>';
+
+    return;
+  }
+
+  tasks.forEach(task => grid.appendChild(creationTuileTache(task)));
 }
 
 function creationTuileTache(task) {
-  const article = document.createElement('article');
+
+  const article= document.createElement('article');
 
   article.className = 'task-tile';
-  article.dataset.id = task.id;
+  article.dataset.id = task.id || '';
 
   article.innerHTML = `
+
     <header class="task-header">
+
       <h3 class="task-title">${escapeHtml(task.title)}</h3>
       <span class="task-date">${task.due_date || ''}</span>
     </header>
     <div class="task-meta">
+
       <span class="task-category">Catégorie : ${escapeHtml(task.category || '—')}</span>
-      <span class="task-status ${statusClass(task.status || 'todo')}">
-        ${statusLabel(task.status || 'todo')}
-      </span>
+      <span class="task-status ${statusClass(task.status || 'todo')}">${statusLabel(task.status || 'todo')}</span>
     </div>
-    <p class="task-description">
-      ${escapeHtml(task.description || task.content || '')}
-    </p>
+    <p class="task-description">${escapeHtml(task.description || task.content || '')}</p>
+
     <footer class="task-footer">
-      <span class="task-owner">Par: ${escapeHtml(task.author_email || CURRENT_EMAIL)}</span>
+      <span class="task-owner">Par: ${escapeHtml(task.author_email || '—')}</span>
       <div class="task-actions">
         <button class="btn btn-small btn-outline edit-task">Modifier</button>
         <button class="btn btn-small btn-danger delete-task">Supprimer</button>
@@ -74,215 +223,178 @@ function creationTuileTache(task) {
 
   article.querySelector('.edit-task').addEventListener('click', () => modifTache(task));
   article.querySelector('.delete-task').addEventListener('click', () => effacerTache(task.id));
-
   return article;
+
 }
 
-
-// ----------- Helpers statut -----------
-
 function statusClass(status) {
-  if (status === 'doing') return 'status-doing';
-  if (status === 'done') return 'status-done';
-  return 'status-todo';
+
+  return status === 'doing' ? 'status-doing' : status === 'done' ? 'status-done' : 'status-todo';
+
 }
 
 function statusLabel(status) {
-  if (status === 'doing') return 'En cours';
-  if (status === 'done') return 'Terminée';
-  return 'À faire';
-}
 
-function escapeHtml(str) {
-  return String(str).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return status === 'doing' ? 'En cours' : status === 'done' ? 'Terminée' : 'À faire';
+
 }
 
 
-// ----------- Écouteurs d’événements -----------
 
 function ecouteurEvenement() {
-  const taskForm = document.getElementById('task-form');
-  const filterApply = document.getElementById('filter-apply');
-  const filterReset = document.getElementById('filter-reset');
-  const editForm = document.getElementById('edit-form');
-  const editClose = document.getElementById('edit-close');
-  const editCancel = document.getElementById('edit-cancel');
 
-  if (taskForm) {
-    taskForm.addEventListener('submit', creationTache);
-  }
-  if (filterApply) {
-    filterApply.addEventListener('click', () => {
-      currentPage = 1;
-      chargementEtAffichageTache();
-    });
-  }
-  if (filterReset) {
-    filterReset.addEventListener('click', () => {
-      document.getElementById('filter-form').reset();
-      currentPage = 1;
-      chargementEtAffichageTache();
-    });
-  }
-  if (editForm) {
-    editForm.addEventListener('submit', soumissionModif);
-  }
-  if (editClose) {
-    editClose.addEventListener('click', fermerModifTache);
-  }
-  if (editCancel) {
-    editCancel.addEventListener('click', fermerModifTache);
-  }
+ 
+  document.getElementById('task-form')?.addEventListener('submit', creationTache);
+
+  
+  document.getElementById('filter-apply')?.addEventListener('click', () => {
+
+    currentPage = 1;
+
+    chargementEtAffichageTache();
+
+  });
+  document.getElementById('filter-reset')?.addEventListener('click', () => {
+    document.getElementById('filter-form')?.reset();
+
+    currentPage = 1;
+
+    chargementEtAffichageTache();
+  });
+
+  
+  document.getElementById('edit-form')?.addEventListener('submit', soumissionModif);
+
+  document.getElementById('edit-close')?.addEventListener('click', fermerModifTache);
+  document.getElementById('edit-cancel')?.addEventListener('click', fermerModifTache);
+
+  
+  document.getElementById('register-form')?.addEventListener('submit', inscriptionUtilisateur);
+  document.getElementById('login-form')?.addEventListener('submit', connexionUtilisateur);
+
+  document.getElementById('logout-btn')?.addEventListener('click', deconnexion);
 }
 
-
-// ----------- Création d’une tuile (tile.php?action=create) -----------
-
 async function creationTache(event) {
+
   event.preventDefault();
+
+  if (!CURRENT_EMAIL) {
+
+    document.getElementById('form-error').textContent ='Connectez-vous d\'abord.';
+
+    return;
+
+  }
+
   const errorEl = document.getElementById('form-error');
+
   if (errorEl) errorEl.textContent = '';
 
   const title = document.getElementById('title').value.trim();
-  const due_date = document.getElementById('due_date').value; // pas utilisé côté backend
-  const category = document.getElementById('category').value.trim();
+
   const description = document.getElementById('description').value.trim();
-  const priority = document.getElementById('priority').value;
-  const status = document.getElementById('status').value;
 
   if (!title || !description) {
-    if (errorEl) errorEl.textContent = 'Titre et description sont obligatoires.';
+
+    if (errorEl) errorEl.textContent = 'Titre et description obligatoires.';
+
     return;
+
   }
 
   try {
-    const res = await fetch('server_side/server/tile.php?action=create', {
+
+    const res = await fetch('server_side/server/tile.php?action=create', {  
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: CURRENT_EMAIL,
         password: CURRENT_PASSWORD,
-        title: title,
+        title,
         content: description,
         cat_id: DEFAULT_CAT_ID
-      })
-    });
 
+      })
+
+    });
     const data = await res.json();
-    if (data.return !== 322500) {
-      throw new Error('Erreur backend : code ' + data.return + '.');
-}
+
+    if (data.return !== 322500) throw new Error(`Code ${data.return}`);
 
     event.target.reset();
+
     currentPage = 1;
     chargementEtAffichageTache();
+
   } catch (err) {
-    console.error(err);
+
     if (errorEl) errorEl.textContent = err.message;
+
+  }
+
+
+
+}
+
+async function effacerTache(id) {
+  if (!CURRENT_EMAIL || !confirm('Supprimer ?')) return;
+
+  try {
+
+
+    const res = await fetch('server_side/server/tile.php?action=delete', {
+
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+
+      body: JSON.stringify({
+
+        email: CURRENT_EMAIL,
+        password: CURRENT_PASSWORD,
+
+        tile_id: id
+
+      })
+    });
+    const data = await res.json();
+
+    if (data.return !== 322500) throw new Error(`Code ${data.return}`);
+
+    chargementEtAffichageTache();
+  } catch (err) {
+
+    alert(err.message);
+
   }
 }
 
-
-// ----------- Modification (modale) -----------
-
 function modifTache(task) {
+
   const modal = document.getElementById('edit-modal');
-  if (!modal) return;
+
+  if (!modal || !CURRENT_EMAIL) return;
 
   document.getElementById('edit-id').value = task.id;
-  document.getElementById('edit-title').value = task.title;
-  document.getElementById('edit-date').value = task.due_date || '';
-  document.getElementById('edit-category').value = task.category || '';
+  document.getElementById('edit-title').value = task.title || '';
+
   document.getElementById('edit-description').value = task.description || task.content || '';
-  document.getElementById('edit-priority').value = task.priority || 'medium';
-  document.getElementById('edit-status').value = task.status || 'todo';
+ 
 
-  const errorEl = document.getElementById('edit-error');
-  if (errorEl) errorEl.textContent = '';
-
+  document.getElementById('edit-error').textContent = '';
   modal.classList.remove('hidden');
+
 }
 
 function fermerModifTache() {
-  const modal = document.getElementById('edit-modal');
-  if (modal) modal.classList.add('hidden');
+  document.getElementById('edit-modal')?.classList.add('hidden');
+
 }
-
-
-// ATTENTION : tile.php n’a pas encore d’endpoint update.
-// soumissionModif est préparée mais ne fonctionnera que si vous
-// ajoutez une action=update côté PHP.
 
 async function soumissionModif(event) {
+
   event.preventDefault();
-
-  const errorEl = document.getElementById('edit-error');
-  if (errorEl) errorEl.textContent = '';
-
-  const id = document.getElementById('edit-id').value;
-  const title = document.getElementById('edit-title').value.trim();
-  const due_date = document.getElementById('edit-date').value;
-  const category = document.getElementById('edit-category').value.trim();
-  const description = document.getElementById('edit-description').value.trim();
-  const priority = document.getElementById('edit-priority').value;
-  const status = document.getElementById('edit-status').value;
-
-  if (!title || !description) {
-    if (errorEl) errorEl.textContent = 'Titre et description sont obligatoires.';
-    return;
-  }
-
-  // Exemple de future requête si ajout action=update dans tile.php :
-  /*
-  try {
-    const res = await fetch('server_side/server/tile.php?action=update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: CURRENT_EMAIL,
-        password: CURRENT_PASSWORD,
-        tile_id: id,
-        title: title,
-        content: description,
-        cat_id: DEFAULT_CAT_ID
-      })
-    });
-    const data = await res.json();
-    if (data.return !== 322500) {
-      throw new Error('Erreur backend (code ' + data.return + ').');
-    }
-    fermerModifTache();
-    chargementEtAffichageTache();
-  } catch (err) {
-    console.error(err);
-    if (errorEl) errorEl.textContent = err.message;
-  }
-  */
-}
-
-
-// ----------- Suppression (tile.php?action=delete) -----------
-
-async function effacerTache(id) {
-  if (!confirm('Voulez-vous vraiment supprimer cette tâche ?')) return;
-
-  try {
-    const res = await fetch('server_side/server/tile.php?action=delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: CURRENT_EMAIL,
-        password: CURRENT_PASSWORD,
-        tile_id: id
-      })
-    });
-    const data = await res.json();
-    if (data.return !== 322500) {
-      throw new Error('Erreur backend (code ' + data.return + ').');
-    }
-    chargementEtAffichageTache();
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
+  // TODO : implémenter quand tile.php a action=update
+  document.getElementById('edit-error').textContent = 'Update non implémenté.';
+  
 }
