@@ -13,8 +13,10 @@ body {
   line-height: 1.4;
 }
 
-html, body {
-  overflow-x: hidden; /* éviter scroll horizontal */
+html,
+body {
+  overflow-x: hidden;
+  /* éviter scroll horizontal */
 }
 
 /* ------ Barre du haut ------ */
@@ -60,7 +62,7 @@ html, body {
   box-shadow: 0 1px 3px rgba(15, 15, 15, 0.1);
 }
 
-.panel + .panel {
+.panel+.panel {
   margin-top: 1rem;
 }
 
@@ -91,12 +93,14 @@ html, body {
   font-size: 0.95rem;
   font-family: inherit;
 }
+
 /* s'applique à tous les inputs/select/textarea dans les formulaires */
 form input,
 form select,
 form textarea {
   width: 100%;
-  max-width: 100%; /* empêche de dépasser du conteneur */
+  max-width: 100%;
+  /* empêche de dépasser du conteneur */
   box-sizing: border-box;
 }
 
@@ -204,6 +208,8 @@ form textarea {
 .tasks-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: auto; */
   gap: 0.9rem;
 }
 

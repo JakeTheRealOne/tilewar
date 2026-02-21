@@ -36,6 +36,7 @@ function create($data)
         echo json_encode(array(
             'return' => 322507,
         ));
+        return;
     }
 
     $email = $data["email"];
@@ -72,6 +73,7 @@ function challenge($data)
         echo json_encode(array(
             'return' => 322507,
         ));
+        return;
     }
 
     $email = $data["email"];
@@ -109,6 +111,7 @@ function delete($data)
         echo json_encode(array(
             'return' => 322507,
         ));
+        return;
     }
 
     $email = $data["email"];

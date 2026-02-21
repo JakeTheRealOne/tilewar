@@ -1,5 +1,5 @@
 <?php
-// CRUD for Tiles
+// Get all categories, get all tiles and get all users
 // Author: Bilal Vandenberge
 
 header("Access-Control-Allow-Origin: *");
@@ -15,17 +15,29 @@ $db_options = [
 $db = new PDO("mysql:host=localhost;dbname=tilewar_database", "admin", "ift3225", $db_options);
 
 switch ($action) {
-    case 'create':
-        create($input);
+    case 'users':
+        users($input);
         break;
 
-    case 'get':
-        get($input);
+    case 'categories':
+        categories($input);
         break;
 
-    case 'delete':
-        delete($input);
+    case 'tiles':
+        tiles($input);
         break;
+
+    // case 'users_last_update':
+    //     usersLastUpdate($input);
+    //     break;
+
+    // case 'categories_last_update':
+    //     usersLastUpdate($input);
+    //     break;
+
+    // case 'tiles_last_update':
+    //     tilesLastUpdate($input);
+    //     break;
 
     default:
         http_response_code(404);
@@ -33,7 +45,7 @@ switch ($action) {
         break;
 }
 
-function user_inner_challenge($email, $password)
+function inner_challenge($email, $password)
 {
     global $db;
 
@@ -47,123 +59,103 @@ function user_inner_challenge($email, $password)
     return ($user && password_verify($password, $user["pw"]));
 }
 
-function category_inner_challenge($cat_id)
+function users($data)
 {
     global $db;
 
-    // SQL query
-    $req = $db->prepare(
-        "SELECT id FROM Categories WHERE id = :cat_id"
-    );
-    $req->execute(["cat_id" => $cat_id]);
-    $cat = $req->fetch();
-
-    return ($cat);
-}
-
-function create($data)
-{
-    global $db;
-
-    if (!isset($data["email"]) || !isset($data["password"]) || !isset($data["title"]) || !isset($data["cat_id"])) {
+    if (!isset($data["email"]) || !isset($data["password"])) {
         echo json_encode(array(
             'return' => 322507,
         ));
         return;
     }
 
-    $content = $data["content"];
-    $cat_id = $data["cat_id"];
-    $title = $data["title"];
     $email = $data["email"];
     $password = $data["password"];
 
     $ret = 322500;
 
-    if (!user_inner_challenge($email, $password)) {
-        $ret = 322506;
-    } else if (!category_inner_challenge($cat_id)) {
-        $ret = 322508;
-    } else {
-        $req_insert = $db->prepare(
-            "INSERT INTO Tiles (author_email, cat_id, title, content) VALUES (:email, :cat_id, :title, :content)"
-        );
-        $req_insert->execute(["email" => $email, "cat_id" => $cat_id, "title" => $title, "content" => $content]);
-    }
-
-    $return = array(
-        'return' => $ret,
-    );
-
-    echo json_encode($return);
-}
-
-function get($data)
-{
-    global $db;
-
-    if (!isset($data["email"]) || !isset($data["password"]) || !isset($data["tile_id"])) {
-        echo json_encode(array(
-            'return' => 322507,
-        ));
-        return;
-    }
-
-
-    $tile_id = $data["tile_id"];
-    $email = $data["email"];
-    $password = $data["password"];
-
-    $ret = 322500;
-
-    if (!user_inner_challenge($email, $password)) {
+    if (!inner_challenge($email, $password)) {
         $ret = 322506;
     } else {
         $req = $db->prepare(
-            "SELECT * FROM Tiles WHERE id = :id"
+            "SELECT email FROM Users"
         );
-        $req->execute(["id" => $tile_id]);
-        $tile = $req->fetch();
+        $req->execute([]);
+        $all_users = $req->fetchAll();
     }
 
     $return = array(
         'return' => $ret,
-        'tile' => $tile,
+        'users' => $all_users,
     );
 
     echo json_encode($return);
 }
 
-
-function delete($data)
+function categories($data)
 {
     global $db;
 
-    if (!isset($data["email"]) || !isset($data["password"]) || !isset($data["tile_id"])) {
+    if (!isset($data["email"]) || !isset($data["password"])) {
         echo json_encode(array(
             'return' => 322507,
         ));
         return;
     }
 
-    $tile_id = $data["tile_id"];
     $email = $data["email"];
     $password = $data["password"];
 
     $ret = 322500;
 
-    if (!user_inner_challenge($email, $password)) {
+    if (!inner_challenge($email, $password)) {
         $ret = 322506;
     } else {
-        $req_del = $db->prepare("DELETE FROM Tiles WHERE id = :cat_id");
-        $req_del->execute(["cat_id" => $tile_id]);
-        if ($req_del->rowCount() == 0) {
-            $ret = 322509;
-        }
+        $req = $db->prepare(
+            "SELECT id, title FROM Categories"
+        );
+        $req->execute([]);
+        $all_categories = $req->fetchAll();
     }
 
     $return = array(
         'return' => $ret,
+        'categories' => $all_categories,
+    );
+
+    echo json_encode($return);
+}
+
+function tiles($data)
+{
+    global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"])) {
+        echo json_encode(array(
+            'return' => 322507,
+        ));
+        return;
+    }
+
+    $email = $data["email"];
+    $password = $data["password"];
+
+    $ret = 322500;
+
+    if (!inner_challenge($email, $password)) {
+        $ret = 322506;
+    } else {
+        $req = $db->prepare(
+            "SELECT id, cat_id, title, content, author_email FROM Tiles"
+        );
+        $req->execute([]);
+        $all_tiles = $req->fetchAll();
+    }
+
+    $return = array(
+        'return' => $ret,
+        'tiles' => $all_tiles,
     );
 
     echo json_encode($return);

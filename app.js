@@ -1,20 +1,25 @@
-const TACHE_PAR_PAGE = 15 ;
-let currentPage=1;
+const TACHE_PAR_PAGE = 15;
+let currentPage = 1;
 
-const DEFAULT_CAT_ID= 1;
+const DEFAULT_CAT_ID = 1;
 
 let CURRENT_EMAIL = null;
 
 let CURRENT_PASSWORD = null;
 
+let LATEST_CATEGORIES = {};
+let LATEST_TILES = {};
+
 
 document.addEventListener('DOMContentLoaded', () => {
   ecouteurEvenement();
-  
-  updateAuthStatus();
-  });
 
-  function updateAuthStatus() {
+  updateAuthStatus();
+
+  retrieveAllCategoriesAndAllTiles();
+});
+
+function updateAuthStatus() {
 
   const nameEl = document.getElementById('user-name');
 
@@ -31,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (noTasks) noTasks.style.display = 'none';
 
-    chargementEtAffichageTache(); 
+    chargementEtAffichageTache();
 
   } else {
 
@@ -42,6 +47,68 @@ document.addEventListener('DOMContentLoaded', () => {
     if (authWarning) authWarning.style.display = 'inline';
 
     if (noTasks) noTasks.style.display = 'block';
+  }
+}
+
+async function retrieveAllCategoriesAndAllTiles() {
+  try {
+    const res = await fetch('server_side/server/all.php?action=categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ "email": CURRENT_EMAIL, "password": CURRENT_PASSWORD })
+    });
+
+    const data = await res.json();
+
+    if (data.return == 322500) {
+      LATEST_CATEGORIES = data.categories;
+      cat_selector = document.getElementById("category");
+      cat_selector.innerHTML = "";
+      LATEST_CATEGORIES.forEach(item => {
+        const cat_option = document.createElement("option");
+        cat_option.value = item.id;
+        cat_option.textContent = item.title;
+        cat_selector.appendChild(cat_option);
+      });
+    }
+
+  } catch (err) {
+    // Pass
+  }
+
+  try {
+    const res = await fetch('server_side/server/all.php?action=tiles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ "email": CURRENT_EMAIL, "password": CURRENT_PASSWORD })
+    });
+
+    const data = await res.json();
+
+    if (data.return == 322500) {
+      LATEST_TILES = data.tiles;
+
+      const formated_tiles = LATEST_TILES.map(tile => ({
+        id: tile.id,
+        category: LATEST_CATEGORIES.find(obj => obj.id === tile.cat_id).title || "none",
+        content: tile.content,
+        title: tile.title,
+        author_email: tile.author_email,
+      }));
+
+      console.log(
+        LATEST_TILES
+      );
+      console.log("CAT", LATEST_CATEGORIES);
+      console.log(formated_tiles);
+
+      renduTache(
+        formated_tiles
+      );
+    }
+
+  } catch (err) {
+    // Pass
   }
 }
 
@@ -73,7 +140,7 @@ async function inscriptionUtilisateur(event) {
 
   try {
 
-    const res = await fetch('server_side/server/user.php?action=create', {  
+    const res = await fetch('server_side/server/user.php?action=create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -83,7 +150,7 @@ async function inscriptionUtilisateur(event) {
     const data = await res.json();
 
     if (data.return === 322500) {
-      if (successEl) successEl.textContent ='Inscription réussie! Connectez-vous.';
+      if (successEl) successEl.textContent = 'Inscription réussie! Connectez-vous.';
       event.target.reset();
     } else if (data.return === 322502) {
       if (errorEl) errorEl.textContent = 'Email déjà utilisé.';
@@ -91,7 +158,7 @@ async function inscriptionUtilisateur(event) {
       if (errorEl) errorEl.textContent = `Erreur ${data.return}`;
     }
   } catch (err) {
-    if (errorEl) errorEl.textContent ='Erreur réseau.';
+    if (errorEl) errorEl.textContent = 'Erreur réseau.';
   }
 }
 
@@ -129,18 +196,19 @@ async function connexionUtilisateur(event) {
       event.target.reset();
 
       updateAuthStatus();
+      retrieveAllCategoriesAndAllTiles();
 
     } else if (data.return === 322503) {
 
       errorEl.textContent = 'Compte inconnu.';
     } else if (data.return === 322504) {
-      errorEl.textContent ='Mot de passe incorrect.';
+      errorEl.textContent = 'Mot de passe incorrect.';
 
     } else {
-      errorEl.textContent =`Erreur ${data.return}`;
+      errorEl.textContent = `Erreur ${data.return}`;
     }
   } catch (err) {
-    errorEl.textContent ='Erreur réseau.';
+    errorEl.textContent = 'Erreur réseau.';
   }
 }
 
@@ -169,31 +237,44 @@ async function chargementEtAffichageTache() {
   const grid = document.getElementById('tasks-grid');
   const compteur = document.getElementById('task-count');
 
-  if (grid) grid.innerHTML = '<p>Liste à implémenter (connecté).</p>';
+  // if (grid) grid.innerHTML = '<p>Liste à implémenter (connecté).</p>';
 
   if (compteur) compteur.textContent = '0 tâche';
 }
 
 function renduTache(tasks) {
+  const compteur = document.getElementById('task-count');
+  if (compteur) compteur.textContent = `${tasks.length} tâche(s)`;
 
-  const grid= document.getElementById('tasks-grid');
+
+  const grid = document.getElementById('tasks-grid');
 
   if (!grid) return;
 
-  grid.innerHTML ='';
-  if (!tasks || tasks.length === 0){
+  grid.innerHTML = '';
+  if (!tasks || tasks.length === 0) {
 
-    grid.innerHTML='<p>Aucune tâche trouvée.</p>';
+    grid.innerHTML = '<p>Aucune tâche trouvée.</p>';
 
     return;
   }
 
-  tasks.forEach(task => grid.appendChild(creationTuileTache(task)));
+  for (task in tasks) {
+
+  }
+
+  tasks.forEach(task => {
+    try {
+      const element = creationTuileTache(task);
+      grid.appendChild(element);
+    } catch (err) {
+      console.error("Task creation failed", err);
+    }
+  });
 }
 
 function creationTuileTache(task) {
-
-  const article= document.createElement('article');
+  const article = document.createElement('article');
 
   article.className = 'task-tile';
   article.dataset.id = task.id || '';
@@ -202,18 +283,18 @@ function creationTuileTache(task) {
 
     <header class="task-header">
 
-      <h3 class="task-title">${escapeHtml(task.title)}</h3>
-      <span class="task-date">${task.due_date || ''}</span>
+      <h3 class="task-title">${(task.title)}</h3>
+      <!-- <span class="task-date">${task.due_date || ''}</span> -->
     </header>
     <div class="task-meta">
 
-      <span class="task-category">Catégorie : ${escapeHtml(task.category || '—')}</span>
-      <span class="task-status ${statusClass(task.status || 'todo')}">${statusLabel(task.status || 'todo')}</span>
+      <span class="task-category">Catégorie : ${(task.category || '—')}</span>
+      <!-- <span class="task-status ${(task.status || 'todo')}">${statusLabel(task.status || 'todo')}</span> -->
     </div>
-    <p class="task-description">${escapeHtml(task.description || task.content || '')}</p>
+    <p class="task-description">${(task.description || task.content || '')}</p>
 
     <footer class="task-footer">
-      <span class="task-owner">Par: ${escapeHtml(task.author_email || '—')}</span>
+      <span class="task-owner">Par: ${(task.author_email || '—')}</span>
       <div class="task-actions">
         <button class="btn btn-small btn-outline edit-task">Modifier</button>
         <button class="btn btn-small btn-danger delete-task">Supprimer</button>
@@ -223,6 +304,7 @@ function creationTuileTache(task) {
 
   article.querySelector('.edit-task').addEventListener('click', () => modifTache(task));
   article.querySelector('.delete-task').addEventListener('click', () => effacerTache(task.id));
+
   return article;
 
 }
@@ -243,10 +325,10 @@ function statusLabel(status) {
 
 function ecouteurEvenement() {
 
- 
+
   document.getElementById('task-form')?.addEventListener('submit', creationTache);
 
-  
+
   document.getElementById('filter-apply')?.addEventListener('click', () => {
 
     currentPage = 1;
@@ -262,13 +344,13 @@ function ecouteurEvenement() {
     chargementEtAffichageTache();
   });
 
-  
+
   document.getElementById('edit-form')?.addEventListener('submit', soumissionModif);
 
   document.getElementById('edit-close')?.addEventListener('click', fermerModifTache);
   document.getElementById('edit-cancel')?.addEventListener('click', fermerModifTache);
 
-  
+
   document.getElementById('register-form')?.addEventListener('submit', inscriptionUtilisateur);
   document.getElementById('login-form')?.addEventListener('submit', connexionUtilisateur);
 
@@ -281,7 +363,7 @@ async function creationTache(event) {
 
   if (!CURRENT_EMAIL) {
 
-    document.getElementById('form-error').textContent ='Connectez-vous d\'abord.';
+    document.getElementById('form-error').textContent = 'Connectez-vous d\'abord.';
 
     return;
 
@@ -294,6 +376,7 @@ async function creationTache(event) {
   const title = document.getElementById('title').value.trim();
 
   const description = document.getElementById('description').value.trim();
+  const currently_selecting_cat = document.getElementById('category').value;
 
   if (!title || !description) {
 
@@ -305,7 +388,7 @@ async function creationTache(event) {
 
   try {
 
-    const res = await fetch('server_side/server/tile.php?action=create', {  
+    const res = await fetch('server_side/server/tile.php?action=create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -313,7 +396,7 @@ async function creationTache(event) {
         password: CURRENT_PASSWORD,
         title,
         content: description,
-        cat_id: DEFAULT_CAT_ID
+        cat_id: currently_selecting_cat
 
       })
 
@@ -326,6 +409,7 @@ async function creationTache(event) {
 
     currentPage = 1;
     chargementEtAffichageTache();
+    retrieveAllCategoriesAndAllTiles();
 
   } catch (err) {
 
@@ -379,7 +463,7 @@ function modifTache(task) {
   document.getElementById('edit-title').value = task.title || '';
 
   document.getElementById('edit-description').value = task.description || task.content || '';
- 
+
 
   document.getElementById('edit-error').textContent = '';
   modal.classList.remove('hidden');
@@ -396,5 +480,5 @@ async function soumissionModif(event) {
   event.preventDefault();
   // TODO : implémenter quand tile.php a action=update
   document.getElementById('edit-error').textContent = 'Update non implémenté.';
-  
+
 }

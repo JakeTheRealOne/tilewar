@@ -55,6 +55,7 @@ function create($data)
         echo json_encode(array(
             'return' => 322507,
         ));
+        return;
     }
 
     $title = $data["title"];
@@ -87,6 +88,7 @@ function get($data)
         echo json_encode(array(
             'return' => 322507,
         ));
+        return;
     }
 
 
@@ -123,6 +125,7 @@ function delete($data)
         echo json_encode(array(
             'return' => 322507,
         ));
+        return;
     }
 
     $cat_id = $data["cat_id"];
