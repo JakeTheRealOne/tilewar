@@ -26,6 +26,13 @@ switch ($action) {
     case 'delete':
         delete($input);
         break;
+    case 'categories':
+        categories($input);
+        break;
+
+    case 'update':
+        update($input);
+        break;
 
     default:
         http_response_code(404);
@@ -90,7 +97,7 @@ function create($data)
         );
         $req_insert->execute(["email" => $email, "cat_id" => $cat_id, "title" => $title, "content" => $content]);
 
-        // Set update timestamp
+        
         $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Tiles\"")->execute();
     }
 
@@ -164,7 +171,7 @@ function delete($data)
             $ret = 322509;
         }
 
-        // Set update timestamp
+        
         $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Tiles\"")->execute();
     }
 
@@ -173,4 +180,83 @@ function delete($data)
     );
 
     echo json_encode($return);
+}
+function categories($data)
+{
+    global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"])) {
+        echo json_encode(array(
+            'return' => 322507,
+        ));
+        return;
+    }
+
+    $email = $data["email"];
+    $password = $data["password"];
+
+    $ret = 322500;
+
+    if (!inner_challenge($email, $password)) {
+        $ret = 322506;
+    } else {
+        $req = $db->prepare(
+            "SELECT id, title FROM Categories"
+        );
+        $req->execute([]);
+        $all_categories = $req->fetchAll();
+    }
+
+    $return = array(
+        'return' => $ret,
+        'categories' => $all_categories,
+    );
+
+    echo json_encode($return);
+}
+
+function update($data)
+{
+    global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"]) || !isset($data["tile_id"]) || 
+        !isset($data["title"]) || !isset($data["content"]) || !isset($data["cat_id"])) {
+        echo json_encode(array('return' => 322507));
+        return;
+    }
+
+    $tile_id = $data["tile_id"];
+    $email = $data["email"];
+    $password = $data["password"];
+    $title = $data["title"];
+    $content = $data["content"];
+    $cat_id = $data["cat_id"];
+
+    $ret = 322500;
+
+    if (!user_inner_challenge($email, $password)) {
+        $ret = 322506;
+    } else if (!category_inner_challenge($cat_id)) {
+        $ret = 322508;
+    } else {
+        $req_update = $db->prepare(
+            "UPDATE Tiles SET title = :title, content = :content, cat_id = :cat_id WHERE id = :tile_id AND author_email = :email"
+        );
+        $req_update->execute([
+            "title" => $title, 
+            "content" => $content, 
+            "cat_id" => $cat_id,
+            "tile_id" => $tile_id,
+            "email" => $email
+        ]);
+        
+        if ($req_update->rowCount() == 0) {
+            $ret = 322509; 
+        }
+
+        
+        $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Tiles\"")->execute();
+    }
+
+    echo json_encode(array('return' => $ret));
 }
