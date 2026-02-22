@@ -9,7 +9,7 @@ Website for collaborative tile organisation.
 | **First name** | **Last name** | **Student number** |
 |----------------|---------------|--------------------|
 | Bilal          | Vandenberge   | 20346870           |
-| Moulay Ali     | Lablih        | 20244746                  |
+| Moulay Ali     | Lablih        | 20244746           |
 
 ## Instalation
 
