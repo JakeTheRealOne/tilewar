@@ -56,6 +56,9 @@ function create($data)
         $pw_hash = password_hash($password, PASSWORD_DEFAULT);
         $req_insert = $db->prepare("INSERT INTO Users (email, pw) VALUES (:email, :pw)");
         $req_insert->execute(["email" => $email, "pw" => $pw_hash]);
+
+        // Set update timestamp
+        $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Users\"")->execute();
     }
 
     $return = array(
@@ -131,6 +134,9 @@ function delete($data)
         } else {
             $req_del = $db->prepare("DELETE FROM Users WHERE email = :email");
             $req_del->execute(["email" => $email]);
+
+            // Set update timestamp
+            $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Users\"")->execute();
         }
     } else {
         $ret = 322503;

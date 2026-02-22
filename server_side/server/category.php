@@ -71,6 +71,9 @@ function create($data)
             "INSERT INTO Categories (author_email, title) VALUES (:email, :title)"
         );
         $req_insert->execute(["email" => $email, "title" => $title]);
+
+        // Set update timestamp
+        $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Categories\"")->execute();
     }
 
     $return = array(
@@ -142,6 +145,9 @@ function delete($data)
         if ($req_del->rowCount() == 0) {
             $ret = 322508;
         }
+
+        // Set update timestamp
+        $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Categories\"")->execute();
     }
 
     $return = array(

@@ -89,6 +89,9 @@ function create($data)
             "INSERT INTO Tiles (author_email, cat_id, title, content) VALUES (:email, :cat_id, :title, :content)"
         );
         $req_insert->execute(["email" => $email, "cat_id" => $cat_id, "title" => $title, "content" => $content]);
+
+        // Set update timestamp
+        $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Tiles\"")->execute();
     }
 
     $return = array(
@@ -160,6 +163,9 @@ function delete($data)
         if ($req_del->rowCount() == 0) {
             $ret = 322509;
         }
+
+        // Set update timestamp
+        $db->prepare("UPDATE LastTimestamps SET updated_at = CURRENT_TIMESTAMP WHERE table_name = \"Tiles\"")->execute();
     }
 
     $return = array(

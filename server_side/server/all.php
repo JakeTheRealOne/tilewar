@@ -31,13 +31,13 @@ switch ($action) {
     //     usersLastUpdate($input);
     //     break;
 
-    // case 'categories_last_update':
-    //     usersLastUpdate($input);
-    //     break;
+    case 'categories_last_update':
+        categoriesLastUpdate($input);
+        break;
 
-    // case 'tiles_last_update':
-    //     tilesLastUpdate($input);
-    //     break;
+    case 'tiles_last_update':
+        tilesLastUpdate($input);
+        break;
 
     default:
         http_response_code(404);
@@ -156,6 +156,74 @@ function tiles($data)
     $return = array(
         'return' => $ret,
         'tiles' => $all_tiles,
+    );
+
+    echo json_encode($return);
+}
+
+function categoriesLastUpdate($data)
+{
+    global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"])) {
+        echo json_encode(array(
+            'return' => 322507,
+        ));
+        return;
+    }
+
+    $email = $data["email"];
+    $password = $data["password"];
+
+    $ret = 322500;
+
+    if (!inner_challenge($email, $password)) {
+        $ret = 322506;
+    } else {
+        $req = $db->prepare(
+            "SELECT updated_at FROM LastTimestamps WHERE table_name = \"Categories\""
+        );
+        $req->execute([]);
+        $timestamp = $req->fetch();
+    }
+
+    $return = array(
+        'return' => $ret,
+        'timestamp' => strtotime($timestamp["updated_at"]),
+    );
+
+    echo json_encode($return);
+}
+
+function tilesLastUpdate($data)
+{
+    global $db;
+
+    if (!isset($data["email"]) || !isset($data["password"])) {
+        echo json_encode(array(
+            'return' => 322507,
+        ));
+        return;
+    }
+
+    $email = $data["email"];
+    $password = $data["password"];
+
+    $ret = 322500;
+
+    if (!inner_challenge($email, $password)) {
+        $ret = 322506;
+    } else {
+        $req = $db->prepare(
+            "SELECT updated_at FROM LastTimestamps WHERE table_name = \"Tiles\""
+        );
+        $req->execute([]);
+        $timestamp = $req->fetch();
+    }
+
+    $return = array(
+        'return' => $ret,
+        'timestamp' => strtotime($timestamp["updated_at"]),
     );
 
     echo json_encode($return);

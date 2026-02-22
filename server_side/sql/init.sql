@@ -30,3 +30,21 @@ CREATE TABLE IF NOT EXISTS Tiles (
     FOREIGN KEY (author_email) REFERENCES Users(email) ON DELETE CASCADE,
     FOREIGN KEY (cat_id) REFERENCES Categories(id) ON DELETE CASCADE
 );
+
+
+-- Timestamps (polling)
+CREATE TABLE IF NOT EXISTS LastTimestamps (
+    table_name VARCHAR(100) NOT NULL UNIQUE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (table_name)
+);
+
+-- Set a default timestamp for all three tables
+INSERT INTO LastTimestamps (table_name) VALUES ("Users");
+INSERT INTO LastTimestamps (table_name) VALUES ("Categories");
+INSERT INTO LastTimestamps (table_name) VALUES ("Tiles");
+
+-- Create admin
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'ift3225';
+GRANT ALL PRIVILEGES ON tilewar_database.* TO 'admin'@'localhost';
+FLUSH PRIVILEGES;

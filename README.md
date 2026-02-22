@@ -34,7 +34,7 @@ mysql --version
 php --version
 ```
 
-### 2. Create the database (in the directory `server_side/sql`)
+### 2. Create the database
 
 ```bash
 mysql -u root -p < server_side/sql/init.sql

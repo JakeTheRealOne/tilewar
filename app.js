@@ -10,14 +10,62 @@ let CURRENT_PASSWORD = null;
 let LATEST_CATEGORIES = {};
 let LATEST_TILES = {};
 
+// Timestamp used for polling
+let LAST_UPDATED_CATEGORIES = 0;
+let LAST_UPDATED_TILES = 0;
+
 
 document.addEventListener('DOMContentLoaded', () => {
   ecouteurEvenement();
 
   updateAuthStatus();
-
-  retrieveAllCategoriesAndAllTiles();
 });
+
+
+async function pollServer() {
+  // Check for timestamp
+
+  console.log("polling"); 
+
+  try {
+    const cat_res = await fetch('server_side/server/all.php?action=categories_last_update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ "email": CURRENT_EMAIL, "password": CURRENT_PASSWORD })
+    });
+
+    const data = await cat_res.json();
+
+    if (data.return == 322500 && Math.floor(new Date(data.timestamp).getTime() / 1000) > LAST_UPDATED_CATEGORIES) {
+      const ts_int = Math.floor(new Date(data.timestamp).getTime() / 1000);
+      LAST_UPDATED_CATEGORIES = ts_int;
+      retrieveAllCategories();
+    }
+
+  } catch (err) {
+    // Pass
+  }
+
+  try {
+    const cat_res = await fetch('server_side/server/all.php?action=tiles_last_update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ "email": CURRENT_EMAIL, "password": CURRENT_PASSWORD })
+    });
+
+    const data = await cat_res.json();
+
+    if (data.return == 322500 && Math.floor(new Date(data.timestamp).getTime() / 1000) > LAST_UPDATED_TILES) {
+      const ts_int = Math.floor(new Date(data.timestamp).getTime() / 1000);
+      LAST_UPDATED_TILES = ts_int;
+      retrieveAllTiles();
+    }
+
+  } catch (err) {
+    // Pass
+  }
+
+}
 
 function updateAuthStatus() {
 
@@ -50,7 +98,7 @@ function updateAuthStatus() {
   }
 }
 
-async function retrieveAllCategoriesAndAllTiles() {
+async function retrieveAllCategories() {
   try {
     const res = await fetch('server_side/server/all.php?action=categories', {
       method: 'POST',
@@ -75,7 +123,9 @@ async function retrieveAllCategoriesAndAllTiles() {
   } catch (err) {
     // Pass
   }
+}
 
+async function retrieveAllTiles() {
   try {
     const res = await fetch('server_side/server/all.php?action=tiles', {
       method: 'POST',
@@ -96,12 +146,6 @@ async function retrieveAllCategoriesAndAllTiles() {
         author_email: tile.author_email,
       }));
 
-      console.log(
-        LATEST_TILES
-      );
-      console.log("CAT", LATEST_CATEGORIES);
-      console.log(formated_tiles);
-
       renduTache(
         formated_tiles
       );
@@ -110,6 +154,11 @@ async function retrieveAllCategoriesAndAllTiles() {
   } catch (err) {
     // Pass
   }
+}
+
+async function retrieveAllCategoriesAndAllTiles() {
+  retrieveAllCategories();
+  retrieveAllTiles();
 }
 
 function deconnexion() {
@@ -239,7 +288,7 @@ async function chargementEtAffichageTache() {
 
   // if (grid) grid.innerHTML = '<p>Liste à implémenter (connecté).</p>';
 
-  if (compteur) compteur.textContent = '0 tâche';
+  // if (compteur) compteur.textContent = '0 tâche';
 }
 
 function renduTache(tasks) {
@@ -446,6 +495,7 @@ async function effacerTache(id) {
     if (data.return !== 322500) throw new Error(`Code ${data.return}`);
 
     chargementEtAffichageTache();
+    retrieveAllCategoriesAndAllTiles();
   } catch (err) {
 
     alert(err.message);
@@ -482,3 +532,12 @@ async function soumissionModif(event) {
   document.getElementById('edit-error').textContent = 'Update non implémenté.';
 
 }
+
+// SERVER POLLING
+setInterval(async () => {
+  try {
+    await pollServer();
+  } catch (err) {
+    console.error("Polling error:", err);
+  }
+}, 15000);
