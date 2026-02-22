@@ -9,7 +9,7 @@ Website for collaborative tile organisation.
 | **First name** | **Last name** | **Student number** |
 |----------------|---------------|--------------------|
 | Bilal          | Vandenberge   | 20346870           |
-| Moulay Ali     | Lablih        | ?                  |
+| Moulay Ali     | Lablih        | 20244746                  |
 
 ## Instalation
 
@@ -20,7 +20,7 @@ Clone this repo.
 After running the php server locally, open this page in your browser:
 
 ```path
-?
+http://localhost/nom_dossier_dans_lequel_vous_enregistrer_le_projet/tilewar/index.php
 ```
 
 ## Execution - server side
