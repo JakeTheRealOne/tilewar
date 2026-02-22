@@ -12,7 +12,7 @@ $db_options = [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
-$db = new PDO("mysql:host=localhost;dbname=tilewar_database", "admin", "ift3225", $db_options);
+$db = new PDO("mysql:host=localhost;dbname=tilewar_database", "root", "ift3225", $db_options);
 
 switch ($action) {
     case 'users':

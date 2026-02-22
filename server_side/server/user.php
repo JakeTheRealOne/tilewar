@@ -7,7 +7,7 @@ header('Content-Type: application/json; charset: UTF-8');
 
 $action = $_GET['action'] ?? null;
 $input = json_decode(file_get_contents('php://input'), true);
-$db = new PDO("mysql:host=localhost;dbname=tilewar_database", "admin", "ift3225");
+$db = new PDO("mysql:host=localhost;dbname=tilewar_database", "root", "");
 
 switch ($action) {
     case 'create':
