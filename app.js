@@ -1,5 +1,14 @@
+//Moulay Ali Lablih
+
 const TACHE_PAR_PAGE = 15;
 let currentPage = 1;
+
+let filterSearch = '';
+let filterCategory = '';
+let filterAuthor = '';
+let filterSort = 'date-desc'; 
+let allUsers = [];
+
 
 const DEFAULT_CAT_ID = 1;
 
@@ -10,7 +19,7 @@ let CURRENT_PASSWORD = null;
 let LATEST_CATEGORIES = {};
 let LATEST_TILES = {};
 
-// Timestamp used for polling
+
 let LAST_UPDATED_CATEGORIES = 0;
 let LAST_UPDATED_TILES = 0;
 
@@ -21,9 +30,22 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAuthStatus();
 });
 
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+
+      clearTimeout(timeout);
+      func(...args);
+
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 
 async function pollServer() {
-  // Check for timestamp
+  
 
   console.log("polling"); 
 
@@ -99,30 +121,119 @@ function updateAuthStatus() {
 }
 
 async function retrieveAllCategories() {
+  if (!CURRENT_EMAIL || !CURRENT_PASSWORD) {
+
+    console.warn('Pas connecté, pas de catégories');
+    return;
+  }
+  
   try {
+    console.log('Envoi catégories:', { email: CURRENT_EMAIL, password: '***' });
+
     const res = await fetch('server_side/server/all.php?action=categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ "email": CURRENT_EMAIL, "password": CURRENT_PASSWORD })
+      body: JSON.stringify({ 
+
+        email: CURRENT_EMAIL, 
+        password: CURRENT_PASSWORD 
+      })
     });
 
     const data = await res.json();
+    console.log('Réponse catégories:', data);
 
-    if (data.return == 322500) {
+    if (data.return == 322500 && Array.isArray(data.categories)) {
       LATEST_CATEGORIES = data.categories;
-      cat_selector = document.getElementById("category");
-      cat_selector.innerHTML = "";
-      LATEST_CATEGORIES.forEach(item => {
-        const cat_option = document.createElement("option");
-        cat_option.value = item.id;
-        cat_option.textContent = item.title;
-        cat_selector.appendChild(cat_option);
-      });
-    }
+      populateCategorySelect("category");
 
+      populateCategorySelect("edit-category");
+    } else {
+      console.error('Erreur catégories:', data.return);
+    }
   } catch (err) {
-    // Pass
+    console.error('Fetch catégories échoué:', err);
   }
+}
+
+
+function populateCategorySelect(selectId = "category") {
+  const select = document.getElementById(selectId);
+  if (!select || LATEST_CATEGORIES.length === 0) return;
+  
+  select.innerHTML = '<option value="">Choisir une catégorie</option>';
+  LATEST_CATEGORIES.forEach(cat => {
+    const option = document.createElement("option");
+    option.value = cat.id;
+    option.textContent = cat.title;
+    select.appendChild(option);
+  });
+}
+
+function applyFilters(rawTiles) {
+  let filtered = [...rawTiles];
+  
+  if (filterSearch.trim()) {
+    const searchLower = filterSearch.toLowerCase();
+    filtered = filtered.filter(tile => 
+      tile.title.toLowerCase().includes(searchLower) ||
+      tile.content.toLowerCase().includes(searchLower)
+    );
+  }
+  
+  if (filterCategory && filterCategory !== '') {
+    filtered = filtered.filter(tile => tile.cat_id == filterCategory);
+  }
+  
+  if (filterAuthor && filterAuthor !== '') {
+    filtered = filtered.filter(tile => tile.author_email === filterAuthor);
+  }
+  
+  filtered.sort((a, b) => {
+    switch (filterSort) {
+      case 'date-desc': return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      case 'date-asc': return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      case 'title-asc': return a.title.localeCompare(b.title);
+      case 'title-desc': return b.title.localeCompare(a.title);
+      default: return 0;
+    }
+  });
+  
+  return filtered;
+}
+
+function applyFiltersClick() {
+  filterSearch = document.getElementById('search-input')?.value || '';
+
+  filterCategory = document.getElementById('filter-category')?.value || '';
+  filterAuthor = document.getElementById('filter-author')?.value || '';
+  filterSort = document.getElementById('filter-sort')?.value || 'date-desc';
+  
+  currentPage = 1;
+  refreshFilteredDisplay();
+}
+
+function resetFiltersClick() {
+  document.getElementById('filter-form')?.reset();
+
+  filterSearch = ''; filterCategory = ''; filterAuthor = ''; filterSort = 'date-desc';
+  currentPage = 1;
+  refreshFilteredDisplay();
+}
+
+function refreshFilteredDisplay() {
+  if (!LATEST_TILES.length) return;
+  
+  const formattedTiles = LATEST_TILES.map(tile => ({
+    id: tile.id, category: LATEST_CATEGORIES.find(c => c.id === tile.cat_id)?.title || "none",
+    content: tile.content, title: tile.title, description: tile.content,
+    cat_id: tile.cat_id, author_email: tile.author_email,
+    created_at: tile.created_at || tile.updated_at || '1970-01-01'
+  }));
+  
+  const filteredTiles = applyFilters(formattedTiles);
+
+  renduTache(filteredTiles);
 }
 
 async function retrieveAllTiles() {
@@ -137,24 +248,27 @@ async function retrieveAllTiles() {
 
     if (data.return == 322500) {
       LATEST_TILES = data.tiles;
-
+      currentPage = 1; 
+      refreshFilteredDisplay();
+      
+      
       const formated_tiles = LATEST_TILES.map(tile => ({
         id: tile.id,
-        category: LATEST_CATEGORIES.find(obj => obj.id === tile.cat_id).title || "none",
+        category: LATEST_CATEGORIES.find(obj => obj.id === tile.cat_id)?.title || "none",
         content: tile.content,
         title: tile.title,
+        description: tile.content, 
+        cat_id: tile.cat_id,       
         author_email: tile.author_email,
       }));
 
-      renduTache(
-        formated_tiles
-      );
+      renduTache(formated_tiles);
     }
-
   } catch (err) {
     // Pass
   }
 }
+
 
 async function retrieveAllCategoriesAndAllTiles() {
   retrieveAllCategories();
@@ -219,11 +333,10 @@ async function connexionUtilisateur(event) {
 
   clearMessages('login-');
 
-  if (!email || !password) {
-
-    if (errorEl) errorEl.textContent = 'Email et mot de passe obligatoires.';
-    return;
-  }
+  if (!email) {
+  if (errorEl) errorEl.textContent = 'Email obligatoire.';
+  return;
+}
 
   try {
 
@@ -282,7 +395,7 @@ async function chargementEtAffichageTache() {
 
   }
 
-  // TODO : appeler tile.php?action=getList quand implémenté
+  
   const grid = document.getElementById('tasks-grid');
   const compteur = document.getElementById('task-count');
 
@@ -295,24 +408,28 @@ function renduTache(tasks) {
   const compteur = document.getElementById('task-count');
   if (compteur) compteur.textContent = `${tasks.length} tâche(s)`;
 
-
   const grid = document.getElementById('tasks-grid');
+  const pagination = document.getElementById('pagination');
+  
+  if (!grid || !pagination) return;
 
-  if (!grid) return;
+ 
+  const totalPages = Math.ceil(tasks.length / TACHE_PAR_PAGE);
 
+  const debut = (currentPage - 1) * TACHE_PAR_PAGE;
+  const fin = debut + TACHE_PAR_PAGE;
+
+  const tuilesPage = tasks.slice(debut, fin);
+
+  
   grid.innerHTML = '';
-  if (!tasks || tasks.length === 0) {
-
+  if (tuilesPage.length === 0) {
     grid.innerHTML = '<p>Aucune tâche trouvée.</p>';
-
+    pagination.innerHTML = '';
     return;
   }
 
-  for (task in tasks) {
-
-  }
-
-  tasks.forEach(task => {
+  tuilesPage.forEach(task => {
     try {
       const element = creationTuileTache(task);
       grid.appendChild(element);
@@ -320,7 +437,98 @@ function renduTache(tasks) {
       console.error("Task creation failed", err);
     }
   });
+
+  
+  genererPagination(totalPages, currentPage);
 }
+function genererPagination(totalPages, pageActuelle) {
+  const pagination = document.getElementById('pagination');
+  if (!pagination) return;
+
+  let html = '<button class="btn btn-small" id="prev-page" ' + (pageActuelle <= 1 ? 'disabled' : '') + '>← Précédent</button>';
+
+ 
+  const maxVisible = 5;
+  let debutPage = Math.max(1, pageActuelle - Math.floor(maxVisible / 2));
+  let finPage = Math.min(totalPages, debutPage + maxVisible - 1);
+  
+  if (finPage - debutPage + 1 < maxVisible) {
+    debutPage = Math.max(1, finPage - maxVisible + 1);
+  }
+
+  for (let i = debutPage; i <= finPage; i++) {
+    html += `<button class="btn btn-small ${i === pageActuelle ? 'btn-primary' : ''}" data-page="${i}">${i}</button>`;
+  }
+
+  html += '<button class="btn btn-small" id="next-page" ' + (pageActuelle >= totalPages ? 'disabled' : '') + '>Suivant →</button>';
+
+  pagination.innerHTML = html;
+
+ 
+  document.getElementById('prev-page')?.addEventListener('click', () => {
+    if (pageActuelle > 1) {
+      currentPage--;
+      renduTache(LATEST_TILES.map(tile => ({
+        id: tile.id,
+        category: LATEST_CATEGORIES.find(obj => obj.id === tile.cat_id)?.title || "none",
+        content: tile.content,
+
+        title: tile.title,
+        description: tile.content, 
+
+        cat_id: tile.cat_id,
+        author_email: tile.author_email,
+
+      })));
+
+    }
+
+  });
+
+  document.getElementById('next-page')?.addEventListener('click', () => {
+
+    if (pageActuelle < totalPages) {
+      currentPage++;
+      renduTache(LATEST_TILES.map(tile => ({
+        id: tile.id,
+        category: LATEST_CATEGORIES.find(obj => obj.id === tile.cat_id)?.title || "none",
+        content: tile.content,
+
+        title: tile.title,
+        description: tile.content,
+
+        cat_id: tile.cat_id,
+        author_email: tile.author_email,
+
+      })));
+    }
+
+  });
+
+ 
+  pagination.querySelectorAll('button[data-page]').forEach(btn => {
+
+    btn.addEventListener('click', () => {
+      currentPage = parseInt(btn.dataset.page);
+
+      renduTache(LATEST_TILES.map(tile => ({
+        id: tile.id,
+        category: LATEST_CATEGORIES.find(obj => obj.id === tile.cat_id)?.title || "none",
+        content: tile.content,
+
+        title: tile.title,
+        description: tile.content,
+
+        cat_id: tile.cat_id,
+        author_email: tile.author_email,
+
+      })));
+
+    });
+
+  });
+}
+
 
 function creationTuileTache(task) {
   const article = document.createElement('article');
@@ -346,12 +554,14 @@ function creationTuileTache(task) {
       <span class="task-owner">Par: ${(task.author_email || '—')}</span>
       <div class="task-actions">
         <button class="btn btn-small btn-outline edit-task">Modifier</button>
+
         <button class="btn btn-small btn-danger delete-task">Supprimer</button>
       </div>
     </footer>
   `;
 
   article.querySelector('.edit-task').addEventListener('click', () => modifTache(task));
+
   article.querySelector('.delete-task').addEventListener('click', () => effacerTache(task.id));
 
   return article;
@@ -370,41 +580,37 @@ function statusLabel(status) {
 
 }
 
-
+function fermerModifTache() {
+  const modal = document.getElementById('edit-modal');
+  if (modal) modal.classList.add('hidden');
+}
 
 function ecouteurEvenement() {
-
-
+ 
   document.getElementById('task-form')?.addEventListener('submit', creationTache);
 
-
-  document.getElementById('filter-apply')?.addEventListener('click', () => {
-
+  
+  document.getElementById('filter-apply')?.addEventListener('click', applyFiltersClick);
+  document.getElementById('filter-reset')?.addEventListener('click', resetFiltersClick);
+  
+  
+  document.getElementById('search-input')?.addEventListener('input', debounce((e) => {
+    filterSearch = e.target.value;
     currentPage = 1;
+    refreshFilteredDisplay();
+  }, 300));
 
-    chargementEtAffichageTache();
-
-  });
-  document.getElementById('filter-reset')?.addEventListener('click', () => {
-    document.getElementById('filter-form')?.reset();
-
-    currentPage = 1;
-
-    chargementEtAffichageTache();
-  });
-
-
+ 
   document.getElementById('edit-form')?.addEventListener('submit', soumissionModif);
-
   document.getElementById('edit-close')?.addEventListener('click', fermerModifTache);
   document.getElementById('edit-cancel')?.addEventListener('click', fermerModifTache);
 
-
+  
   document.getElementById('register-form')?.addEventListener('submit', inscriptionUtilisateur);
   document.getElementById('login-form')?.addEventListener('submit', connexionUtilisateur);
-
   document.getElementById('logout-btn')?.addEventListener('click', deconnexion);
 }
+
 
 async function creationTache(event) {
 
@@ -455,11 +661,9 @@ async function creationTache(event) {
     if (data.return !== 322500) throw new Error(`Code ${data.return}`);
 
     event.target.reset();
-
     currentPage = 1;
-    chargementEtAffichageTache();
-    retrieveAllCategoriesAndAllTiles();
-
+    retrieveAllCategoriesAndAllTiles();  
+    populateCategorySelect();            
   } catch (err) {
 
     if (errorEl) errorEl.textContent = err.message;
@@ -504,33 +708,63 @@ async function effacerTache(id) {
 }
 
 function modifTache(task) {
-
   const modal = document.getElementById('edit-modal');
-
   if (!modal || !CURRENT_EMAIL) return;
 
   document.getElementById('edit-id').value = task.id;
   document.getElementById('edit-title').value = task.title || '';
-
   document.getElementById('edit-description').value = task.description || task.content || '';
 
+  populateCategorySelect("edit-category");  // ← Remplit le select du modal
+  const editCat = document.getElementById('edit-category');
+  if (editCat && task.cat_id) editCat.value = task.cat_id;  // Sélectionne la bonne
 
   document.getElementById('edit-error').textContent = '';
   modal.classList.remove('hidden');
-
 }
 
-function fermerModifTache() {
-  document.getElementById('edit-modal')?.classList.add('hidden');
-
-}
 
 async function soumissionModif(event) {
-
   event.preventDefault();
-  // TODO : implémenter quand tile.php a action=update
-  document.getElementById('edit-error').textContent = 'Update non implémenté.';
+  
+  const errorEl = document.getElementById('edit-error');
+  if (errorEl) errorEl.textContent = '';
 
+  const id = document.getElementById('edit-id').value;
+  const title = document.getElementById('edit-title').value.trim();
+  const description = document.getElementById('edit-description').value.trim();
+  const cat_id = document.getElementById('edit-category').value;
+
+  if (!title || !description) {
+    if (errorEl) errorEl.textContent = 'Titre et description obligatoires.';
+    return;
+  }
+
+  try {
+    const res = await fetch('server_side/server/tile.php?action=update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: CURRENT_EMAIL,
+        password: CURRENT_PASSWORD,
+        tile_id: id,
+        title,
+        content: description,
+        cat_id
+      })
+    });
+
+    const data = await res.json();  // ← AWAIT MANQUANT !
+    console.log('Update response:', data); // DEBUG
+
+    if (data.return !== 322500) throw new Error(`Code ${data.return || 'unknown'}`);
+
+    fermerModifTache();
+    retrieveAllCategoriesAndAllTiles();
+  } catch (err) {
+    console.error('Update error:', err);
+    if (errorEl) errorEl.textContent = err.message;
+  }
 }
 
 // SERVER POLLING
